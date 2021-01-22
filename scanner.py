@@ -42,6 +42,107 @@ auth_table = [("user","password",10),("tech","tech",1),("root","Zte521",2),("roo
 auth_queue = PriorityQueue()
 for item in auth_table:
     auth_queue.push(item[0:2],item[-1])
+-*- coding:utf-8 -*-
+import urllib
+import urllib2
+import re
+import json
+import chardet
+
+
+import sys
+reload(sys) 
+sys.setdefaultencoding('gb18030') 
+import xml.dom.minidom as Dom
+#First, create an xml file
+ip_addressname=[]#Create a list of names in the province
+#Created is a list of ip addresses
+ipurl=[]
+storeip=[]
+#-------------Query ip address--------
+IpUrl ="http://ips.chacuo.net/"
+user_agent='Mozilla/5.0 (Windows NT 6.1; WOW64)'
+headers={'User-Agent':user_agent}
+try:
+      req=urllib2.Request(IpUrl,headers=headers)
+      response=urllib2.urlopen(req)
+      content=response.read().decode('utf-8')
+      my_get=r'<ul class="list">(.*?)</ul>'
+      myitem=re.findall(my_get,content,re.S|re.M)
+      i=0
+      m=0
+      for line in myitem:
+            my_re=r'<li>(.*?)</li>'
+            myitem1=re.findall(my_re,line,re.S|re.M)
+            for line1 in myitem1:
+                  if "a" in line1:
+                        my_re1=r'<a .*?>(.*?)</a>'
+                        myitem2=re.findall(my_re1,line1,re.S|re.M)
+                        
+                        #Get the url in href
+                        my_url=r"(?<=href=\").+?(?=\")|(?<=href=\').+?(?=\')"
+                        myitem3=re.findall(my_url,line1,re.I|re.S|re.M)
+                        b2=json.dumps(myitem2,encoding="utf-8",ensure_ascii=False) 
+                        b1=json.dumps(myitem3,encoding="utf-8",ensure_ascii=False)
+                        string=','.join(myitem2)#Convert the list to a string
+                        stringURL=','.join(myitem3)#Convert the url in the list to a string
+                        ip_addressname.append(string)
+                        ipurl.append(stringURL)
+                        
+                        
+                  #else:
+                        #print line1
+      ad=json.dumps(ip_addressname,encoding="utf-8",ensure_ascii=False)
+      ul=json.dumps(ipurl,encoding="utf-8",ensure_ascii=False)
+      print ad
+      print (u"Choose an address input screen from the addresses above".decode('gb18030'))
+      while True:
+            ip_address=raw_input("please input address:").decode('utf-8')
+            #print chardet.detect(ip_address)['encoding']
+            count=0
+            for  i,inputname in enumerate(ip_addressname):
+                  if ip_address==inputname:
+                        req1=urllib2.Request(ipurl[count],headers=headers)
+                        response1=urllib2.urlopen(req1)
+                        content1=response1.read().decode('utf-8')
+                        my_get1=r'<dd>(.*?)</dd>'
+                        myitem4=re.findall(my_get1,content1,re.S|re.M)
+                        for line2 in myitem4:
+                              if "span" in line2:
+                                    my_re2=r'<span .*?>(.*?)</span>'
+                                    myitem5=re.findall(my_re2,line2,re.S|re.M)
+                                    b=json.dumps(myitem5,encoding="utf-8",ensure_ascii=False)
+                                    stringip='-'.join(myitem5)
+                                    storeip.append(stringip)
+                        n=0
+                        length=len(storeip)
+                        print  (u"The address you entered has %d IP address segments as shown below and saved in the ip.xml file".decode('gb18030') % length)
+                        storeip1=','.join(storeip)
+                        print storeip1
+                        
+                        if __name__ == "__main__":
+                              doc = Dom.Document()
+                              root_node = doc.createElement("ip")#Create an xml file named ip
+                              doc.appendChild(root_node)
+                              for i in range(0,length):            
+                                    ip_author_node = doc.createElement("ip_range")
+                                    for m in range(n,n+1):
+                                          ip_author_value = doc.createTextNode(storeip[m])
+                                          ip_author_node.appendChild(ip_author_value)  
+                                    root_node.appendChild(ip_author_node)
+                                    n+=1
+                              f = open("ip.xml", "w")  
+                              f.write(doc.toprettyxml(indent = "", newl = "\n", encoding = "utf-8"))  
+                              f.close()
+                  else:
+                       count +=1
+except urllib2.URLError,e:
+      if hasattr(e,"code"):
+            print e.code
+      if hasattr(e,"reason"):
+            print e.reason
+            
+ 
 
 lastRecv = time.time()
 exitFlag = 0
